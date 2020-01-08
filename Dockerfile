@@ -28,15 +28,19 @@ RUN brew install apache-flink
 
 WORKDIR  /home/linuxbrew/.linuxbrew/Cellar/apache-flink/1.9.1/
 
-
 COPY bin  bin
+
 COPY conf  conf
+COPY lib  lib
+
+COPY examples  examples
+
+COPY opt  opt
+
+COPY plugins  plugins
 
 RUN mkdir log
 
 EXPOSE 8081
 
-ENTRYPOINT  ./bin/start-cluster.sh
-
-
-
+ENTRYPOINT  ./bin/start-cluster.sh start-foreground; ./bin/flink run ./examples/batch/WordCount.jar;

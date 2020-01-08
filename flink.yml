@@ -18,6 +18,6 @@ spec:
     spec:
       containers:
       - name: flink-image
-        image: sameerbhat/flinkraw
+        image: sameerbhat/flink-raw
         ports:
         - containerPort: 8081
