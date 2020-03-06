@@ -1,0 +1,24 @@
+deployment:
+  tmpfs: yes
+  template:
+    imagePullSecrets:
+      - name: regsecret2
+    containers:
+      - name: soiworkflow
+        image: oneartifactory.verizon.com:8091/vcm/eqhv/soiworkflow:prod
+        command: ["java","-Dspring.profiles.active=prod","-Dweblogic.Name=WEBLOGIC","-jar","soi-wflow-services-0.0.1-SNAPSHOT.jar"]
+##        args: ["uateast.sh"]
+        ports:
+          - containerPort: 8086
+            name: http
+            protocol: TCP
+        resources:
+          limits:
+            cpu: "4500m"
+            memory: "5.5Gi"
+          requests:
+            cpu: "4000m"
+            memory: "5Gi"
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true

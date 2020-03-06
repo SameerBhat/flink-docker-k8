@@ -1,47 +1,53 @@
-FROM ubuntu:xenial
+FROM ubuntu:bionic
+LABEL maintainer="Shaun Jackman <sjackman@gmail.com>"
+LABEL name="linuxbrew/bionic"
+ARG DEBIAN_FRONTEND=noninteractive
 
 RUN apt-get update \
-	&& apt-get install -y --no-install-recommends software-properties-common \
-	&& add-apt-repository -y ppa:git-core/ppa \
-	&& apt-get update \
-	&& apt-get install -y --no-install-recommends \
-		bzip2 \
-		ca-certificates \
-		curl \
-		file \
-		fonts-dejavu-core \
-		g++ \
-		git \
-		libz-dev \
-		locales \
-		make \
-		netbase \
-		openssh-client \
-		patch \
-		sudo \
-		uuid-runtime \
-		tzdata \
-	&& rm -rf /var/lib/apt/lists/*
+    && apt-get install -y --no-install-recommends ca-certificates curl file g++ git locales make uuid-runtime \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/* \
+    && localedef -i en_US -f UTF-8 en_US.UTF-8 \
+    && useradd -m -s /bin/bash linuxbrew \
+    && echo 'linuxbrew ALL=(ALL) NOPASSWD:ALL' >>/etc/sudoers
 
-RUN localedef -i en_US -f UTF-8 en_US.UTF-8 \
-	&& useradd -m -s /bin/bash linuxbrew \
-	&& echo 'linuxbrew ALL=(ALL) NOPASSWD:ALL' >>/etc/sudoers
-ADD . /home/linuxbrew/.linuxbrew/Homebrew
-ARG FORCE_REBUILD
-RUN cd /home/linuxbrew/.linuxbrew \
-	&& mkdir -p bin etc include lib opt sbin share var/homebrew/linked Cellar \
-	&& ln -s ../Homebrew/bin/brew /home/linuxbrew/.linuxbrew/bin/ \
-	&& cd /home/linuxbrew/.linuxbrew/Homebrew \
-	&& git remote set-url origin https://github.com/Homebrew/brew
-
+USER linuxbrew
 WORKDIR /home/linuxbrew
 ENV PATH=/home/linuxbrew/.linuxbrew/bin:/home/linuxbrew/.linuxbrew/sbin:$PATH \
-	SHELL=/bin/bash
+    SHELL=/bin/bash
 
-# Install portable-ruby, tap homebrew/core, install audit gems, and cleanup
-RUN HOMEBREW_NO_ANALYTICS=1 HOMEBREW_NO_AUTO_UPDATE=1 brew tap homebrew/core \
-	&& chown -R linuxbrew: /home/linuxbrew/.linuxbrew \
-	&& chmod -R g+w,o-w /home/linuxbrew/.linuxbrew \
-	&& rm -rf ~/.cache \
-	&& brew install-bundler-gems \
-	&& brew cleanup
+RUN git clone https://github.com/Homebrew/brew /home/linuxbrew/.linuxbrew/Homebrew \
+    && mkdir /home/linuxbrew/.linuxbrew/bin \
+    && ln -s ../Homebrew/bin/brew /home/linuxbrew/.linuxbrew/bin/ \
+    && brew config
+
+
+RUN brew update
+
+# RUN brew install cmake
+# RUN brew install openssh
+
+RUN brew install apache-flink
+
+WORKDIR  /home/linuxbrew/.linuxbrew/Cellar/apache-flink/1.9.1/
+
+COPY bin  bin
+
+COPY conf  conf
+
+COPY lib  lib
+
+COPY examples  examples
+
+COPY opt  opt
+
+COPY plugins  plugins
+
+RUN mkdir /tmp/log
+
+EXPOSE 8081
+
+ENTRYPOINT  ./bin/start-cluster.sh start-foreground; ./bin/flink run ./examples/batch/WordCount.jar & sleep 3600;
+
+# ENTRYPOINT  ./bin/start-local.sh; sleep 3600;
+
